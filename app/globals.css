@@ -1,0 +1,165 @@
+@import "tailwindcss";
+
+/* Design tokens. BPAA brand: ink, orange accent, teal for "работает само". Light only: the demo is shown to
+   owners on phones and on calls, a second theme would double the screenshot checks for little gain. */
+:root {
+  --bg: #f6f7f9;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --ink: #141821;
+  --muted: #5a6373; /* 5.9:1 on --bg */
+  --border: #dfe3ea;
+  --accent: #e8590c;
+  --accent-ink: #ffffff;
+  --accent-soft: #fff1e6;
+  --teal: #0b7285;
+  --teal-soft: #e7f5f7;
+  --ok: #2b8a3e;
+  --ok-soft: #e6f4ea;
+  --warn: #b35c00;
+  --warn-soft: #fff4e0;
+  --danger: #c92a2a;
+  --danger-soft: #fdecec;
+  --tg: #2a8bd6;
+  --wa: #1fa855;
+  --ig: #c13584;
+  --radius-sm: 6px;
+  --radius: 10px;
+  --radius-lg: 14px;
+  --control-h: 44px;
+  --shadow: 0 1px 2px rgb(20 24 33 / 0.06), 0 1px 1px rgb(20 24 33 / 0.04);
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-teal: var(--teal);
+  --color-teal-soft: var(--teal-soft);
+  --color-ok: var(--ok);
+  --color-ok-soft: var(--ok-soft);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-tg: var(--tg);
+  --color-wa: var(--wa);
+  --color-ig: var(--ig);
+  --font-sans: var(--font-inter);
+  --radius-sm: var(--radius-sm);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius-lg);
+}
+
+body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+  font-feature-settings: "tnum" 1, "calt" 0;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  height: var(--control-h);
+  padding: 0 16px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 16px;
+  white-space: nowrap;
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-primary { background: var(--accent); color: var(--accent-ink); }
+.btn-primary:hover { background: #d24f08; }
+.btn-ghost { background: var(--surface); color: var(--ink); border: 1px solid var(--border); }
+.btn-ghost:hover { border-color: #c6ccd6; }
+.btn:focus-visible, a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 9px;
+  border-radius: 999px;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.eyebrow {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* Chips: day, time, recipient, stage and filter switches. One height for all of them. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  color: var(--ink);
+}
+.chip[aria-pressed="true"], .chip[aria-current="page"], .chip[aria-selected="true"] {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: #fff;
+}
+/* The tap area stays 44px even though the chip is drawn at 36px. */
+.chip { position: relative; }
+.chip::after { content: ""; position: absolute; inset: -4px 0; }
+
+.avatar {
+  display: inline-grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 700;
+  flex: none;
+}
+
+.scroll-x { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.scroll-x::-webkit-scrollbar { display: none; }
+
+[data-tour-active="true"] {
+  outline: 3px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: var(--radius-lg);
+  transition: outline-color 0.2s;
+}
+
+dialog.sheet { padding: 0; border: 0; background: transparent; max-width: none; max-height: none; width: 100%; height: 100%; }
+dialog.sheet::backdrop { background: rgb(20 24 33 / 0.45); }
+
+@keyframes rise { from { transform: translateY(16px); opacity: 0; } to { transform: none; opacity: 1; } }
+.rise { animation: rise 0.2s ease-out; }
+@media (prefers-reduced-motion: reduce) { .rise { animation: none; } }
