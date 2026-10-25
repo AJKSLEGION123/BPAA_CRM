@@ -16,6 +16,13 @@ export const MANAGERS: { id: ManagerId; name: string }[] = [
   { id: "timur", name: "Тимур" },
 ];
 export const managerName = (id: ManagerId) => MANAGERS.find((m) => m.id === id)!.name;
+/** Avatar colours, so a manager is recognisable at a glance on cards, chips and the chart. */
+export const MANAGER_TONE: Record<ManagerId, { bg: string; ink: string }> = {
+  aigerim: { bg: "#e3f2ec", ink: "#1e6b4f" },
+  daniyar: { bg: "#e6ecfb", ink: "#2f4fa3" },
+  olga: { bg: "#fbeee0", ink: "#9a4d0f" },
+  timur: { bg: "#f3e6f7", ink: "#7a3290" },
+};
 
 export type SourceId = "site" | "wa" | "ig";
 export const SOURCES: { id: SourceId; name: string }[] = [

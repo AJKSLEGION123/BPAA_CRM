@@ -1,8 +1,9 @@
 "use client";
 // «Сделки»: tiles, the board (stage chips on phones, 5 columns on wide screens), the deal sheet with the
 // visitor's own marks, and the 30-day chart. Marks live in localStorage and only change this browser's view.
-import { useEffect, useState } from "react";
-import { DEMO_NOW, MANAGERS, STAGES, managerName, type ManagerId } from "@/lib/demo/config";
+import { useEffect, useRef, useState } from "react";
+import { DEMO_NOW, MANAGERS, STAGES, type ManagerId } from "@/lib/demo/config";
+import { Avatar } from "./Avatar";
 import { demo } from "@/lib/demo/generate";
 import { dealsAt, historyLine, snapshot, type DealRow, type SeriesPoint } from "@/lib/demo/selectors";
 import { fmtDateTime, fmtMoney, oct, plural } from "@/lib/demo/time";
@@ -60,15 +61,42 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
   const deal = openId ? demo().deals.find((d) => d.id === openId) : undefined;
   const row = deal ? dealsAt(DEMO_NOW, overrides).find((r) => r.deal.id === deal.id) : undefined;
 
-  const mark = (kind: "action" | "stage", stage: number) => {
-    if (!deal) return;
+  const markDeal = (id: string, kind: "action" | "stage", stage: number) => {
     const first = !state?.seen.includes("first-mark");
     update((s) => ({
       ...s,
-      marks: { ...s.marks, [deal.id]: [...(s.marks[deal.id] ?? []), { kind, stage }] },
+      marks: { ...s.marks, [id]: [...(s.marks[id] ?? []), { kind, stage }] },
       seen: first ? [...s.seen, "first-mark"] : s.seen,
     }));
     if (first) setToast(COPY.firstMark);
+  };
+  const mark = (kind: "action" | "stage", stage: number) => deal && markDeal(deal.id, kind, stage);
+
+  // Desktop drag between columns: same action as «Перевести на этап», own pointer code, no library.
+  const [drag, setDrag] = useState<{ id: string; from: number; x: number; y: number; over: number | null; label: string } | null>(null);
+  const dragged = useRef(false);
+  const startDrag = (e: React.PointerEvent, r: DealRow) => {
+    if (e.pointerType !== "mouse" || e.button !== 0 || r.state.status !== "open" || r.state.abandoned) return;
+    const x0 = e.clientX, y0 = e.clientY;
+    dragged.current = false;
+    const stageAt = (x: number, y: number) => {
+      const col = document.elementFromPoint(x, y)?.closest<HTMLElement>("[data-stage]");
+      return col ? Number(col.dataset.stage) : null;
+    };
+    const move = (ev: PointerEvent) => {
+      if (!dragged.current && Math.hypot(ev.clientX - x0, ev.clientY - y0) < 6) return;
+      dragged.current = true;
+      setDrag({ id: r.deal.id, from: r.state.stage, x: ev.clientX, y: ev.clientY, over: stageAt(ev.clientX, ev.clientY), label: r.deal.client });
+    };
+    const up = (ev: PointerEvent) => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      const to = dragged.current ? stageAt(ev.clientX, ev.clientY) : null;
+      if (to !== null && to !== r.state.stage) markDeal(r.deal.id, "stage", to);
+      setDrag(null);
+    };
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
   };
 
   const card = (r: DealRow) => {
@@ -78,11 +106,12 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
     const isMarked = !!overrides[r.deal.id];
     return (
       <li key={r.deal.id}>
-        <button type="button" onClick={() => setOpenId(r.deal.id)}
-          className={`card block w-full border-l-4 p-3 text-left ${tone}`}>
+        <button type="button" onPointerDown={(e) => startDrag(e, r)}
+          onClick={() => { if (!dragged.current) setOpenId(r.deal.id); dragged.current = false; }}
+          className={`card block w-full select-none border-l-4 p-3 text-left transition hover:shadow-md ${tone} ${drag?.id === r.deal.id ? "opacity-40" : ""}`}>
           <div className="flex items-start justify-between gap-2">
             <span className="text-[16px] font-semibold text-ink">{r.deal.client}</span>
-            <span className="avatar" title={managerName(r.deal.manager)}>{managerName(r.deal.manager)[0]}</span>
+            <Avatar id={r.deal.manager} />
           </div>
           <div className="text-[15px] text-ink">{r.deal.need}</div>
           <div className={`mt-1 text-[14px] ${idle}`}>
@@ -120,7 +149,7 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
           </div>
           <button type="button" className="btn btn-ghost" onClick={() => setNorms(true)}>Нормы по этапам</button>
         </div>
-        <p className="text-[14px] text-muted">{COPY.boardNote}</p>
+        <p className="text-[14px] text-muted">{COPY.boardNote}<span className="hidden lg:inline"> Карточку можно перетащить в другой этап.</span></p>
 
         {/* Phones and tablets: stage chips, one list. */}
         <div className="lg:hidden">
@@ -143,7 +172,8 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
         {/* Wide screens: five open columns, closed stages folded below. */}
         <div className="hidden gap-3 lg:grid lg:grid-cols-5">
           {STAGES.map((s) => (
-            <div key={s.id} className="min-w-0 rounded-[var(--radius-lg)] bg-surface-2 p-2">
+            <div key={s.id} data-stage={s.id}
+              className={`min-w-0 rounded-[var(--radius-lg)] p-2 transition ${drag && drag.over === s.id && drag.from !== s.id ? "bg-teal-soft ring-2 ring-teal" : "bg-surface-2"}`}>
               <h3 className="flex min-h-11 items-start justify-between gap-2 px-1 pb-2 text-[15px] font-bold leading-tight">
                 <span>{s.name}</span>
                 <span className="flex items-center gap-1 tabular-nums text-muted">
@@ -195,7 +225,7 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
               <dt className="text-muted">Сумма</dt>
               <dd className="tabular-nums">{fmtMoney(deal.amount)}</dd>
               <dt className="text-muted">Ответственный</dt>
-              <dd>{managerName(deal.manager)}</dd>
+              <dd><Avatar id={deal.manager} withName size={24} /></dd>
             </dl>
 
             <div>
@@ -245,8 +275,15 @@ export function DealsView({ series, initialDeal }: { series: SeriesPoint[]; init
         <p className="mt-3 text-[14px] text-muted">В проекте задаём вместе с вами.</p>
       </Sheet>
 
+      {drag && (
+        <div className="pointer-events-none fixed z-[70] -translate-x-1/2 -translate-y-1/2 rounded-[var(--radius)] border border-line bg-surface px-3 py-2 text-[15px] font-semibold shadow-xl"
+          style={{ left: drag.x, top: drag.y }}>
+          {drag.label}
+          {drag.over !== null && drag.over !== drag.from && <span className="block text-[13px] font-normal text-teal">→ {STAGES[drag.over].name}</span>}
+        </div>
+      )}
       {toast && !deal && (
-        <div className="rise fixed inset-x-3 bottom-20 z-[60] mx-auto max-w-sm rounded-[var(--radius-lg)] bg-ink p-4 text-[15px] text-white shadow-xl sm:bottom-6" role="status">
+        <div className="rise fixed inset-x-3 bottom-24 z-[60] mx-auto max-w-sm rounded-[var(--radius-lg)] bg-ink p-4 text-[15px] text-white shadow-xl sm:bottom-6" role="status">
           {toast}
         </div>
       )}

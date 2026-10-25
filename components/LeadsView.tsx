@@ -9,6 +9,7 @@ import type { Lead, PreparedLead } from "@/lib/demo/model";
 import { leadTiles, type Period } from "@/lib/demo/selectors";
 import { dayNumber, fmtDayLong, fmtDayShort, fmtTime, fmtWeekdayDay, localHour } from "@/lib/demo/time";
 import { useDemoStore } from "@/lib/local";
+import { Avatar } from "./Avatar";
 import { Tile } from "./Blocks";
 import { Sheet } from "./Sheet";
 
@@ -204,7 +205,7 @@ export function LeadsView() {
                     <div className="mt-2 text-[17px] font-semibold">{l.client} <span className="font-normal text-muted">{l.phone}</span></div>
                     <div className="text-[16px]">{l.need}</div>
                     <div className="mt-2 flex items-center gap-2 text-[15px] text-muted">
-                      <span className="avatar">{managerName(l.manager)[0]}</span>{managerName(l.manager)}
+                      <Avatar id={l.manager} withName />
                     </div>
                   </button>
                 </li>
@@ -259,7 +260,7 @@ export function LeadsView() {
       </Sheet>
 
       {toast && (
-        <div className="rise fixed inset-x-3 bottom-20 z-40 mx-auto max-w-sm rounded-[var(--radius-lg)] bg-[#e9eef3] p-3 shadow-xl sm:bottom-6" role="status">
+        <div className="rise fixed inset-x-3 bottom-24 z-40 mx-auto max-w-sm rounded-[var(--radius-lg)] bg-[#e9eef3] p-3 shadow-xl sm:bottom-6" role="status">
           <div className="mb-1 flex items-center justify-between text-[13px] text-muted">
             <span>Пример сообщения в Telegram</span>
             <button type="button" className="min-h-8 px-2" aria-label="Закрыть" onClick={() => setToast(null)}>✕</button>

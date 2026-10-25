@@ -84,7 +84,7 @@ describe("demo month", () => {
     const head = feed(30, "head").map((m) => [m.title, ...m.lines.map((l) => l.text)].join("\n")).join("\n");
     expect(head).toContain("Стоят дольше нормы: 24 — Тимур 11 · Данияр 6 · Ольга 4 · Айгерим 3");
     expect(head).toContain("Срочно: 8 сделок без действий 5 дней и больше");
-    expect(head).toContain("Заявок: 9 — сайт 2, WhatsApp 4, Instagram 3. Без ответственного: 0");
+    expect(head).toContain("Заявок: 9 — сайт 2, WhatsApp 4, Instagram 3\nБез ответственного: 0");
     const timur = feed(30, "timur").flatMap((m) => m.lines.map((l) => l.text));
     expect(timur).toContain("Ерлан · Замер · 9 дн.");
     const oct15 = feed(15, "head").map((m) => m.lines.map((l) => l.text).join(" ")).join(" ");

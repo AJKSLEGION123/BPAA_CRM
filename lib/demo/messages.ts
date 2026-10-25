@@ -106,7 +106,8 @@ export function feed(day: FeedDay, to: Recipient): TgMessage[] {
   out.push({
     id: `d${day}-19`, ts: at19, slot: "19", title: `Итог дня, ${day} октября`,
     lines: [
-      { text: `Заявок: ${leads.length} — ${src}. Без ответственного: 0` },
+      { text: `Заявок: ${leads.length} — ${src}` },
+      { text: "Без ответственного: 0" },
       ...(m ? [] : [{ text: `Сделок сдвинуто: ${sum.moved}` }, { text: `Предоплат: ${sum.prepayments}` }]),
       { text: `Стоят дольше нормы: ${overAt19}` },
     ],

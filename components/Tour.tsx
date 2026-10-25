@@ -53,7 +53,7 @@ export function Tour({ restart, showcaseId }: { restart: boolean; showcaseId: st
   };
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-16 z-40 px-3 sm:bottom-6">
+    <div className="pointer-events-none fixed inset-x-0 bottom-20 z-40 px-3 sm:bottom-6">
       <div className="rise pointer-events-auto mx-auto max-w-md rounded-[var(--radius-lg)] border border-line bg-surface p-4 shadow-xl" role="dialog" aria-label="Как устроено демо">
         <div className="mb-2 flex items-center justify-between text-[13px] text-muted">
           <span>{step + 1} из {steps.length}</span>
