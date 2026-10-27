@@ -36,6 +36,8 @@ const pad = (n: number) => String(n).padStart(2, "0");
 export const fmtTime = (ts: number) => { const p = parts(ts); return `${p.h}:${pad(p.mi)}`; };
 export const fmtDayShort = (ts: number) => { const p = parts(ts); return `${p.d} ${MONTHS_SHORT[p.m]}`; };
 export const fmtDayLong = (ts: number) => { const p = parts(ts); return `${p.d} ${MONTHS_GEN[p.m]}`; };
+/** With the year: for real dates such as access expiry, which can fall in another year. */
+export const fmtDayYear = (ts: number) => { const p = parts(ts); return `${p.d} ${MONTHS_GEN[p.m]} ${p.y}`; };
 export const fmtWeekdayDay = (ts: number) => {
   const p = parts(ts);
   const w = WEEKDAYS[p.dow];

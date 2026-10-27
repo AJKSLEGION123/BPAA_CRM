@@ -1,6 +1,7 @@
 // Session cookie "<payload>.<hmac>": payload is base64url({u, exp, v}), HMAC-SHA256 with DEMO_SECRET.
 // Web Crypto only, so the same code runs in proxy.ts and in server components.
-import { accounts, secret } from "@/lib/env";
+import { findAccount } from "@/lib/accounts";
+import { secret } from "@/lib/env";
 
 export const COOKIE = "bpaa_demo";
 export const SESSION_DAYS = 7;
@@ -50,8 +51,8 @@ export async function readSession(token: string | undefined): Promise<string | n
     if (!expected || !safeEqual(sig, expected)) return null;
     const { u, exp, v } = JSON.parse(fromB64url(payload));
     if (v !== 1 || typeof u !== "string" || !(Number(exp) > Date.now())) return null;
-    const account = accounts().find((a) => a.login === u);
-    if (!account || Date.parse(account.until) < Date.now()) return null;
+    const account = await findAccount(u);
+    if (!account || account.disabled || Date.parse(account.until) < Date.now()) return null;
     return u;
   } catch {
     return null;

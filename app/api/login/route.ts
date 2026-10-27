@@ -1,16 +1,14 @@
-import { NextResponse } from "next/server";
-import { checkLogin } from "@/lib/accounts";
+import { NextResponse, after } from "next/server";
+import { checkLogin, isAdmin } from "@/lib/accounts";
 import { COOKIE, createSession } from "@/lib/auth";
+import { addFailure, clientInfo, failures, logLogin, notify } from "@/lib/events";
 
-// Backup brake only; the real limit is a Vercel WAF rate-limit rule on POST /api/login (10/min per IP).
+// Failed attempts are counted per client in Redis, so the limit holds across function instances.
+// The in-memory map is the fallback when the store is unavailable.
 const WINDOW_MS = 15 * 60_000;
 const MAX_FAILS = 8;
 const MIN_MS = 800; // every answer takes at least this long, success or not
-const fails = new Map<string, { n: number; since: number }>();
-
-function clientIp(req: Request): string {
-  return req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
-}
+const localFails = new Map<string, { n: number; since: number }>();
 
 /** Same-origin relative target only; anything else falls back to "/". */
 function safeNext(raw: FormDataEntryValue | null, origin: string): string {
@@ -35,9 +33,11 @@ export async function POST(req: Request) {
   const sentOrigin = req.headers.get("origin");
   if (sentOrigin && sentOrigin !== origin) return new NextResponse(null, { status: 403 });
 
-  const ip = clientIp(req);
-  const rec = fails.get(ip);
-  if (rec && started - rec.since < WINDOW_MS && rec.n >= MAX_FAILS) {
+  const info = clientInfo(req);
+  const stored = await failures(info.ipHash);
+  const local = localFails.get(info.ipHash);
+  const localCount = local && started - local.since < WINDOW_MS ? local.n : 0;
+  if ((stored ?? localCount) >= MAX_FAILS) {
     await settle(started);
     return NextResponse.redirect(new URL("/login?e=wait", origin), 303);
   }
@@ -47,12 +47,14 @@ export async function POST(req: Request) {
   const pass = String(form.get("pass") ?? "").slice(0, 128);
   const next = safeNext(form.get("next"), origin);
 
-  const result = checkLogin(login, pass);
+  const result = await checkLogin(login, pass);
   if (!result.ok) {
     if (result.reason === "bad") {
-      const cur = rec && started - rec.since < WINDOW_MS ? rec : { n: 0, since: started };
-      fails.set(ip, { n: cur.n + 1, since: cur.since });
+      if (stored === null) localFails.set(info.ipHash, { n: localCount + 1, since: localCount ? local!.since : started });
+      else await addFailure(info.ipHash);
     }
+    // Only record attempts for logins that exist, so the log never collects guessed names or typos of passwords.
+    if (result.reason === "expired") after(() => logLogin({ ts: started, login, ok: false, reason: "expired", country: info.country, device: info.device }));
     await settle(started);
     const back = new URL("/login", origin);
     back.searchParams.set("e", result.reason);
@@ -60,8 +62,15 @@ export async function POST(req: Request) {
     return NextResponse.redirect(back, 303);
   }
 
-  fails.delete(ip);
+  localFails.delete(info.ipHash);
   const token = await createSession(result.account.login, result.account.until);
+  after(async () => {
+    await logLogin({ ts: started, login: result.account.login, ok: true, country: info.country, device: info.device });
+    if (!isAdmin(result.account.login)) {
+      const note = result.account.note ? ` (${result.account.note})` : "";
+      await notify(`Демо BPAA: вошёл ${result.account.login}${note}, ${info.device}${info.country ? `, ${info.country}` : ""}`);
+    }
+  });
   await settle(started);
   if (!token) return new NextResponse("Демо закрыто", { status: 503 });
   const res = NextResponse.redirect(new URL(next, origin), 303);

@@ -28,6 +28,15 @@ npm run lint
 npm run build
 ```
 
-## Accounts
+## Accounts and /admin
 
-One login per prospect, each with an expiry date: `npm run add-account -- p01 30`. Add the printed JSON object to `DEMO_ACCOUNTS` in Vercel, then redeploy. Set `DEMO_ENABLED=false` to close the demo for everyone.
+Pavel, or any login listed in `ADMIN_LOGINS`, can open `/admin` to:
+
+- create a login for a prospect with an expiry date; the password is shown once, together with a ready message to send;
+- add 14 days to a login, disable it or delete it;
+- see when each prospect last visited and which tabs they opened;
+- read the login log, which keeps only country and device type; IP addresses are not stored.
+
+Logins created on `/admin` live in Upstash Redis (Vercel Marketplace, free plan) and take effect without a redeploy. Logins in `DEMO_ACCOUNTS` still work, but changing them needs a redeploy: `npm run add-account -- p01 30`. Set `DEMO_ENABLED=false` to close the demo for everyone.
+
+To get a Telegram message every time a prospect logs in, set `DEMO_NOTIFY_TG_TOKEN` and `DEMO_NOTIFY_CHAT_ID`. This is optional.

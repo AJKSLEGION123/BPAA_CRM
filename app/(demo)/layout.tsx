@@ -2,6 +2,7 @@ import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import { Shell } from "@/components/Shell";
+import { isAdmin } from "@/lib/accounts";
 import { COOKIE, readSession } from "@/lib/auth";
 import { showcaseId } from "@/lib/demo/selectors";
 
@@ -10,7 +11,7 @@ export default async function DemoLayout({ children }: { children: ReactNode }) 
   const login = await readSession((await cookies()).get(COOKIE)?.value);
   if (!login) redirect("/login");
   return (
-    <Shell login={login} showcaseId={showcaseId()}>
+    <Shell login={login} admin={isAdmin(login)} showcaseId={showcaseId()}>
       {children}
     </Shell>
   );

@@ -1,7 +1,7 @@
 "use client";
 // Frame of every demo page. Wide screens: sidebar like a work tool. Phones: header + bottom tabs.
 // The honesty strip sits on top everywhere and cannot be closed.
-import { CalendarDays, Ellipsis, FileChartColumn, Inbox, Info, LogOut, RotateCcw, SquareKanban, type LucideIcon } from "lucide-react";
+import { CalendarDays, Ellipsis, FileChartColumn, Inbox, Info, LogOut, RotateCcw, Shield, SquareKanban, type LucideIcon } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState, type ReactNode } from "react";
@@ -24,7 +24,8 @@ const isActive = (path: string, href: string) => (href === "/" ? path === "/" : 
 
 type Actions = { onTour: () => void; onReal: () => void; onReset: () => void };
 
-export function Shell({ login, showcaseId, children }: { login: string; showcaseId: string; children: ReactNode }) {
+export function Shell({ login, admin, showcaseId, children }: { login: string; admin: boolean; showcaseId: string; children: ReactNode }) {
+  usePageViews(admin);
   const [cta, setCta] = useState(false);
   const [real, setReal] = useState(false);
   const [tourKey, setTourKey] = useState(0);
@@ -41,9 +42,9 @@ export function Shell({ login, showcaseId, children }: { login: string; showcase
           </button>
         </div>
         <div className="lg:flex">
-          <Sidebar actions={actions} onCta={() => setCta(true)} />
+          <Sidebar actions={actions} admin={admin} onCta={() => setCta(true)} />
           <div className="min-w-0 flex-1">
-            <Header actions={actions} />
+            <Header actions={actions} admin={admin} />
             <main className="mx-auto w-full max-w-6xl px-4 pb-28 pt-5 sm:pb-12 lg:px-8 lg:pt-8">{children}</main>
             <footer className="mx-auto max-w-6xl space-y-1 px-4 pb-28 text-[13px] text-muted sm:pb-10 lg:px-8">
               <p>{COPY.footerWho}</p>
@@ -73,7 +74,7 @@ function Logo() {
   );
 }
 
-function Sidebar({ actions, onCta }: { actions: Actions; onCta: () => void }) {
+function Sidebar({ actions, admin, onCta }: { actions: Actions; admin: boolean; onCta: () => void }) {
   const path = usePathname();
   const small = "flex min-h-10 w-full items-center gap-2 rounded-[var(--radius)] px-3 text-left text-[14px] text-muted hover:bg-surface-2 hover:text-ink";
   return (
@@ -96,6 +97,7 @@ function Sidebar({ actions, onCta }: { actions: Actions; onCta: () => void }) {
         })}
       </nav>
       <div className="mt-auto space-y-1">
+        {admin && <Link href="/admin" className={small}><Shield size={16} aria-hidden />Админка: доступы и входы</Link>}
         <button type="button" className={small} onClick={actions.onTour}><Info size={16} aria-hidden />Как устроено демо</button>
         <button type="button" className={small} onClick={actions.onReal}><Info size={16} aria-hidden />{COPY.realTitle}</button>
         <button type="button" className={small} onClick={actions.onReset}><RotateCcw size={16} aria-hidden />Сбросить демо</button>
@@ -108,7 +110,7 @@ function Sidebar({ actions, onCta }: { actions: Actions; onCta: () => void }) {
   );
 }
 
-function Header({ actions }: { actions: Actions }) {
+function Header({ actions, admin }: { actions: Actions; admin: boolean }) {
   const path = usePathname();
   const [menu, setMenu] = useState(false);
   const box = useRef<HTMLDivElement>(null);
@@ -147,6 +149,7 @@ function Header({ actions }: { actions: Actions }) {
           </button>
           {menu && (
             <div className="rise absolute right-0 top-12 w-64 overflow-hidden rounded-[var(--radius)] border border-line bg-surface py-1 shadow-lg" role="menu">
+              {admin && <Link role="menuitem" href="/admin" className={item} onClick={() => setMenu(false)}><Shield size={18} aria-hidden />Админка</Link>}
               <button role="menuitem" className={item} onClick={() => { setMenu(false); actions.onTour(); }}><Info size={18} aria-hidden />Как устроено демо</button>
               <button role="menuitem" className={item} onClick={() => { setMenu(false); actions.onReal(); }}><Info size={18} aria-hidden />{COPY.realTitle}</button>
               <button role="menuitem" className={item} onClick={() => { setMenu(false); actions.onReset(); }}><RotateCcw size={18} aria-hidden />Сбросить демо</button>
@@ -178,4 +181,17 @@ function BottomNav() {
       })}
     </nav>
   );
+}
+
+/** Counts which tabs a prospect opens (shown on /admin). Pavel's own visits are not counted. */
+function usePageViews(admin: boolean) {
+  const path = usePathname();
+  useEffect(() => {
+    if (admin) return;
+    try {
+      navigator.sendBeacon("/api/track", path);
+    } catch {
+      // no beacon support: the demo works the same, the visit is just not counted
+    }
+  }, [path, admin]);
 }
